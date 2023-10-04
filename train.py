@@ -23,16 +23,16 @@ def train():
 
     resnetq=make_model().to(device)
     resnetk = copy.deepcopy(resnetq).to(device)
-    optimizer = optim.SGD(resnetq.parameters(), lr=0.001, momentum=0.9)
-
+    optimizer = torch.optim.Adam(resnetq.parameters(),0.0024, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(dataloader_training_dataset_mutated), eta_min=0,
+                                                           last_epoch=-1)
     losses_train = []
-    num_epochs = 100
+    num_epochs = 200
     momentum=0.999
     flag = 0
-    K=2048
+    K=8192
     queue = None
 
-    optimizer = optim.SGD(resnetq.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-6)
 
     if not os.path.exists('results'):
         os.makedirs('results')
@@ -104,6 +104,8 @@ def train():
             epoch_losses_train.append(loss.cpu().data.item())
 
             optimizer.step()
+            if epoch >= 10:
+                scheduler.step()
 
             queue = torch.cat((queue, k), 0)
 
