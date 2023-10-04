@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import seaborn as sns
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 
 class LinearNet(nn.Module):
 
@@ -24,22 +24,23 @@ class LinearNet(nn.Module):
         return(x)
     
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-resnet=make_model().to(device)
-if(os.path.isfile("results/modelq.pth")):
-    resnet.load_state_dict(torch.load("results/modelq.pth"))
-else:
-    print("Model Does not exist")
-
-
-dataloader_training_dataset = get_linear_dataloader()
-dataloader_testing_dataset = get_test_dataloader()
 
 def get_mean_of_list(L):
     return sum(L) / len(L)
 
 def Linear():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    resnet=make_model().to(device)
+    if(os.path.isfile("results/modelq.pth")):
+        resnet.load_state_dict(torch.load("results/modelq.pth"))
+    else:
+        print("Model Does not exist")
+
+
+    dataloader_training_dataset = get_linear_dataloader()
+    dataloader_testing_dataset = get_test_dataloader()
 
     if not os.path.exists('linear'):
         os.makedirs('linear')
@@ -88,7 +89,7 @@ def Linear():
             epoch_acc_train_num_linear = 0.0
             epoch_acc_train_den_linear = 0.0
 
-            for (_, sample_batched) in enumerate(dataloader_training_dataset):
+            for (_, sample_batched) in enumerate(tqdm(dataloader_training_dataset)):
 
                 x = sample_batched['image']
                 y_actual = sample_batched['label']
@@ -131,7 +132,7 @@ def Linear():
         epoch_acc_test_num_linear = 0.0
         epoch_acc_test_den_linear = 0.0
 
-        for (_, sample_batched) in enumerate((dataloader_testing_dataset)):
+        for (_, sample_batched) in enumerate(tqdm(dataloader_testing_dataset)):
             
             x = sample_batched['image']
             y_actual = sample_batched['label']

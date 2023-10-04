@@ -10,68 +10,70 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import copy
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-dataloader_training_dataset_mutated = get_mutated_dataloader()
 
-resnetq=make_model().to(device)
-resnetk = copy.deepcopy(resnetq).to(device)
-optimizer = optim.SGD(resnetq.parameters(), lr=0.001, momentum=0.9)
-
-losses_train = []
-num_epochs = 100
-momentum=0.999
-flag = 0
-K=2048
-queue = None
-
-optimizer = optim.SGD(resnetq.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-6)
-
-if not os.path.exists('results'):
-    os.makedirs('results')
-
-if(os.path.isfile("results/modelq.pth")):
-    resnetq.load_state_dict(torch.load("results/modelq.pth"))
-    resnetk.load_state_dict(torch.load("results/modelk.pth"))
-    optimizer.load_state_dict(torch.load("results/optimizer.pth"))
-
-
-    temp = np.load("results/lossesfile.npz")
-    losses_train = list(temp['arr_0'])
-    queue = torch.load("results/queue.pt")
-
-
-if queue is None:
-    while True:
-
-        with torch.no_grad():
-            for (_, sample_batched) in enumerate(dataloader_training_dataset_mutated):
-
-                xk = sample_batched['image2']
-                xk = xk.to(device)
-                k = resnetk(xk)
-                k = k.detach()
-
-                k = torch.div(k,torch.norm(k,dim=1).reshape(-1,1))
-
-                if queue is None:
-                    queue = k
-                else:
-                    if queue.shape[0] < K:
-                        queue = torch.cat((queue, k), 0)
-                    else:
-                        flag = 1
-
-                if flag == 1:
-                    break
-
-        if flag == 1:
-            break
 
 
 def get_mean_of_list(L):
     return sum(L) / len(L)
 
 def train():
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    dataloader_training_dataset_mutated = get_mutated_dataloader()
+
+    resnetq=make_model().to(device)
+    resnetk = copy.deepcopy(resnetq).to(device)
+    optimizer = optim.SGD(resnetq.parameters(), lr=0.001, momentum=0.9)
+
+    losses_train = []
+    num_epochs = 100
+    momentum=0.999
+    flag = 0
+    K=2048
+    queue = None
+
+    optimizer = optim.SGD(resnetq.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-6)
+
+    if not os.path.exists('results'):
+        os.makedirs('results')
+
+    if(os.path.isfile("results/modelq.pth")):
+        resnetq.load_state_dict(torch.load("results/modelq.pth"))
+        resnetk.load_state_dict(torch.load("results/modelk.pth"))
+        optimizer.load_state_dict(torch.load("results/optimizer.pth"))
+
+
+        temp = np.load("results/lossesfile.npz")
+        losses_train = list(temp['arr_0'])
+        queue = torch.load("results/queue.pt")
+
+
+    if queue is None:
+        while True:
+
+            with torch.no_grad():
+                for (_, sample_batched) in enumerate(dataloader_training_dataset_mutated):
+
+                    xk = sample_batched['image2']
+                    xk = xk.to(device)
+                    k = resnetk(xk)
+                    k = k.detach()
+
+                    k = torch.div(k,torch.norm(k,dim=1).reshape(-1,1))
+
+                    if queue is None:
+                        queue = k
+                    else:
+                        if queue.shape[0] < K:
+                            queue = torch.cat((queue, k), 0)
+                        else:
+                            flag = 1
+
+                    if flag == 1:
+                        break
+
+            if flag == 1:
+                break
     resnetq.train()
 
     for epoch in range(num_epochs):
