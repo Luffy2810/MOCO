@@ -1,4 +1,4 @@
-cd data
+
 gdown 1Qi9mu38QiC2Cw0OAEfS6DHaA_TMoCssQ
 unzip Compiled_train.zip
 rm Compiled_train.zip
